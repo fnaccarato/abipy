@@ -34,6 +34,7 @@ __maintainer__ = "Matteo Giantomassi"
 
 __all__ = [
     "Work",
+    "ScfDensityWork",
     "BandStructureWork",
     "RelaxWork",
     "G0W0Work",
@@ -895,6 +896,27 @@ class Work(BaseWork, NodeContainer):
         parser.parse(filenames)
 
         return parser
+
+
+class ScfDensityWork(Work):
+    """
+    Work for scf calculations.
+
+    .. rubric:: Inheritance Diagram
+    .. inheritance-diagram:: ScfDensityWork
+    """
+
+    def __init__(self, scf_input, workdir=None, manager=None):
+        """
+        Args:
+            scf_input: Input for the SCF run
+            workdir: Working directory.
+            manager: |TaskManager| object.
+        """
+        super().__init__(workdir=workdir, manager=manager)
+
+        # Register the GS-SCF run.
+        self.scf_task = self.register_scf_task(scf_input)
 
 
 class BandStructureWork(Work):

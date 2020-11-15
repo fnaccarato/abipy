@@ -35,7 +35,7 @@ from abipy.flowtk import wrappers
 from .nodes import Status, Node, NodeError, NodeResults, Dependency, GarbageCollector, check_spectator
 from .tasks import ScfTask, TaskManager, FixQueueCriticalError
 from .utils import File, Directory, Editor
-from .works import NodeContainer, Work, BandStructureWork, PhononWork, BecWork, G0W0Work, QptdmWork, DteWork
+from .works import NodeContainer, Work, ScfDensityWork, BandStructureWork, PhononWork, BecWork, G0W0Work, QptdmWork, DteWork
 from .events import EventsParser
 
 __author__ = "Matteo Giantomassi"
@@ -47,8 +47,10 @@ __maintainer__ = "Matteo Giantomassi"
 __all__ = [
     "Flow",
     "G0W0WithQptdmFlow",
+    "scf_density_flow",
     "bandstructure_flow",
     "g0w0_flow",
+    "NonLinearCoeffFlow",
 ]
 
 
@@ -2992,6 +2994,56 @@ class FlowCallback(object):
 
 
 # Factory functions.
+def scf_density_flow(workdir, scf_input, manager=None, flow_class=Flow, allocate=True):
+    """
+    Build a |Flow| for self-consistent calculations.
+
+    Args:
+        workdir: Working directory.
+        scf_input: Input for the GS SCF run.
+        manager: |TaskManager| object used to submit the jobs. Initialized from manager.yml if manager is None.
+        flow_class: Flow subclass
+        allocate: True if the flow should be allocated before returning.
+
+    Returns: |Flow| object
+    """
+    flow = flow_class(workdir, manager=manager)
+    work = ScfDensityWork(scf_input)
+    flow.register_work(work)
+
+    # Handy aliases
+    flow.scf_task = work.scf_task
+
+    if allocate: flow.allocate()
+    return flow
+
+
+def bandstructure_flow(workdir, scf_input, nscf_input, dos_inputs=None, manager=None, flow_class=Flow, allocate=True):
+    """
+    Build a |Flow| for band structure calculations.
+
+    Args:
+        workdir: Working directory.
+        scf_input: Input for the GS SCF run.
+        nscf_input: Input for the NSCF run (band structure run).
+        dos_inputs: Input(s) for the NSCF run (dos run).
+        manager: |TaskManager| object used to submit the jobs. Initialized from manager.yml if manager is None.
+        flow_class: Flow subclass
+        allocate: True if the flow should be allocated before returning.
+
+    Returns: |Flow| object
+    """
+    flow = flow_class(workdir, manager=manager)
+    work = BandStructureWork(scf_input, nscf_input, dos_inputs=dos_inputs)
+    flow.register_work(work)
+
+    # Handy aliases
+    flow.scf_task, flow.nscf_task, flow.dos_tasks = work.scf_task, work.nscf_task, work.dos_tasks
+
+    if allocate: flow.allocate()
+    return flow
+
+
 def bandstructure_flow(workdir, scf_input, nscf_input, dos_inputs=None, manager=None, flow_class=Flow, allocate=True):
     """
     Build a |Flow| for band structure calculations.
